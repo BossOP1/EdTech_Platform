@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 
 const coursesSchema = new Schema({
 
-    courseNameame:{
+    courseName:{
         type:String,
         trim:true,
     },

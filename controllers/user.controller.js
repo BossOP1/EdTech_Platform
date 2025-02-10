@@ -5,6 +5,7 @@ import { User } from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
+import mailSender from "../utils/mailSender";
 
 
 
@@ -139,7 +140,7 @@ try {
         accountType: accountType,
         approved: approved,
         additionalDetails: profileDetails._id,
-        image: "",
+        image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
       })
 
       const createdUser = await User.findById(user._id).select(
@@ -153,6 +154,7 @@ try {
       return res
       .status(200)
       .json(new ApiResponse(200,createdUser,"User has been created Successfully"))
+      
 } catch (error) {
     throw new ApiError(400,"there is some problem in sighning up the user || error.message")
 }
@@ -220,6 +222,8 @@ const changePassword = asyncHandler(async(req,res)=>{
  
     user.password = newPassword;
     await user.save({validateBeforeSave:false})
+
+    const mailResponse = await mailSender(user.email,"password changes mail",)
  
     return res
     .status(200)
@@ -233,9 +237,9 @@ const changePassword = asyncHandler(async(req,res)=>{
 
 // refreshing accesstokens
 
-const refreshAccessTokens = asyncHandler(async(req,res)=>{
-  
-})
+// const refreshAccessTokens = asyncHandler(async(req,res)=>{
+
+// })
 
 
 export {sendOtp,signup,login,changePassword}
