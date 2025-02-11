@@ -1,15 +1,19 @@
-const mongoose = require("mongoose")
-require("dotenv").config();
+import mongoose from "mongoose"
+import { DB_NAME } from "../constants.js"
 
-exports.connect = () =>{
-    mongoose.connecct(process.env.MONGODB_URL,{
-        useNewUrlParser:true,
-        useUnifiedTopology:true
-    })
-    .then(()=> console.log("DB connected Successfully"))
-    .catch((error)=>{
-        console.log("DB connection failed")
-        console.error(error)
+
+
+const connectDB = async()=>{
+    try {
+        
+        const connectionInstance = await mongoose.connect(`${process.env.MONGODB_URL}/${DB_NAME}`)
+        console.log(`\n MONGODB Connected !! DB_HOST :${connectionInstance.connection.host} `);
+
+
+    } catch (error) {
+        console.log("error",error);
         process.exit(1);
-    })
+    }
 }
+
+export default connectDB;

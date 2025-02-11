@@ -4,12 +4,12 @@ const profileSchema  = new Schema({
 
    gender: {
       type:String,
-      required:true,
+      
     },
 
     DateOfBirth :{
         type:Date,
-        required:true,
+      
     },
 
     about:{

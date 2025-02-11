@@ -1,13 +1,11 @@
 import otpGenerator from "otp-generator"
-import { Otp } from "../models/otp.models";
-import { Profile } from "../models/profile.model";
-import { User } from "../models/user.model";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
-import mailSender from "../utils/mailSender";
-
-
+import { Otp } from "../models/otp.models.js";
+import { Profile } from "../models/profile.model.js";
+import { User } from "../models/user.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import mailSender from "../utils/mailSender.js";
 
 
 const generateAccessAndRefreshTokens = async(userId)=>{
@@ -32,133 +30,166 @@ const generateAccessAndRefreshTokens = async(userId)=>{
 // send otp
 
 
-const sendOtp = asyncHandler(async(req,res)=>{
-    const{email} = req.body;
+// const sendOtp = asyncHandler(async(req,res)=>{
+//     const{email} = req.body;
 
-   try {
-     const checkUserPresent = await User.findOne({email})
+//    try {
+//      const checkUserPresent = await User.findOne({email})
     
-     if(checkUserPresent){
-         throw new ApiError(404,"no such user found")
-     }
+//      if(!checkUserPresent){
+//          throw new ApiError(404,"no such user found")
+//      }
  
-        let otp = otpGenerator.generate(6,{
-         upperCaseAlphabets:false,
-         lowerCaseAlphabets:false,
-         specialChars:false,
-        })
+//         let otp = otpGenerator.generate(6,{
+//          upperCaseAlphabets:false,
+//          lowerCaseAlphabets:false,
+//          specialChars:false,
+//         })
  
-        const result = await Otp.findOne({otp:otp})
+//         const result = await Otp.findOne({otp:otp})
  
-        while(result){
-         otpGenerator.generate(6,{
-             lowerCaseAlphabets:false,
-             upperCaseAlphabets:false,
-             specialChars:false
-         })
+//         while(result){
+//          otpGenerator.generate(6,{
+//              lowerCaseAlphabets:false,
+//              upperCaseAlphabets:false,
+//              specialChars:false
+//          })
        
-         const otpPayload = {email,otp};
-         const otpBody = await Otp.create(otpPayload);
+//          const otpPayload = {email,otp};
+//          const otpBody = await Otp.create(otpPayload);
  
-         res.status(200).json(
-             {
-                 success:true,
-             message:`Otp sent successfully`,otpBody,
-            }
-         )
+//          res.status(200).json(
+//              {
+//                  success:true,
+//              message:`Otp sent successfully`,otpBody,
+//             }
+//          )
  
-        }
+//         }
  
-   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message })
-   }
+//    } catch (error) {
+//     throw new ApiError(500,error.message || "there is some problem in sendotp")
+//    }
        
 
-})
+// })
+
+const sendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if the user already exists
+    const checkUserPresent = await User.findOne({ email });
+    if (checkUserPresent) {
+      throw new ApiError(409, "User already exists");
+    }
+
+    // Generate unique 6-digit OTP
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    // Create OTP entry in DB
+    const otpBody = await Otp.create({
+      email,
+      otp,
+    });
+
+    // Send success response without exposing OTP details
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { email,otp }, "OTP sent successfully"));
+
+  } catch (error) {
+    throw new ApiError(500, error.message || "Some problem in sending OTP");
+  }
+});
+
+
 /// signup
 
-const signup = asyncHandler(async(req,res)=>{
-    const{firstName,lastName,email,password,accountType,contactNumber,confirmPassword,otp} = req.body;
-try {
-    
-        if(!firstName || !lastName || !password || !confirmPassword ||!accountType || !contactNumber || !otp){
-            throw new ApiError(404,"please fill all the details")
-        }
-    
-        if(password !== confirmPassword){
-            throw new ApiError(400,"password does not match")
-        }
-    
-       const existedUser = await User.findOne({
-        email:email
-       })
-    
-       if(existedUser){
-        throw new ApiError(400,"user already exist")
-       }
-    
-       const response = await Otp.findOne({
-          email
-       }).sort({createdAt : -1}).limit(1);
-    
-       if(!response){
-        throw new ApiError(500,"there is some problem in getting the response")
-       }
-         
-       if(response.length === 0){
-        throw new ApiError(400,"no otp found")
-       }
-    
-       if(response.otp !== otp){
-        throw new ApiError(400,"otp invalid")
-       }
-    
-       const hashPassword = await bcrypt.hash(confirmPassword,10)
-    
-       let approved = "";
-       approved === "Instructor" ? (approved = false) : (approved = true)
-    
-    
-      const profileDetails = await Profile.create({
-        gender:null,
-        DateOfBirth:null,
-        about:null,
-        PhoneNumber:contactNumber,
-      })
-    
-      if(!profileDetails){
-        throw new ApiError(500,"there is some error in creating profile in databse")
-      }
-    
-    
-      const user = await User.create({
-        firstName,
-        lastName,
-        email,
-        contactNumber,
-        password: hashPassword,
-        accountType: accountType,
-        approved: approved,
-        additionalDetails: profileDetails._id,
-        image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
-      })
+const signup = asyncHandler(async (req, res) => {
+  const { firstName, lastName, email, password, accountType, contactNumber, confirmPassword, otp } = req.body;
 
-      const createdUser = await User.findById(user._id).select(
-        "-password -refreshTokens"
-      )
+  try {
+    if (!firstName || !lastName || !password || !confirmPassword || !accountType || !contactNumber || !otp) {
+      throw new ApiError(404, "Please fill all the details");
+    }
 
-      if(!createdUser){
-        throw new ApiError(500,"there is some error in fetching the user details")
-      }
-    
-      return res
+    if (password !== confirmPassword) {
+      throw new ApiError(400, "Password does not match");
+    }
+
+    const existedUser = await User.findOne({ email });
+    if (existedUser) {
+      throw new ApiError(400, "User already exists");
+    }
+
+    const response = await Otp.findOne({ email }).sort({ createdAt: -1 });
+    if (!response) {
+      throw new ApiError(400, "There is a problem in getting the OTP");
+    }
+
+    if (String(response.otp).trim() !== String(otp).trim()) {
+      throw new ApiError(400, "Invalid OTP");
+    }
+
+    // Determine approval status based on account type
+    let approved;
+    if (accountType === "Instructor") {
+      approved = false; // Instructors require manual approval
+    } else if (accountType === "Admin") {
+      approved = true; // Admins are auto-approved
+    } else if (accountType === "Student") {
+      approved = true; // Students are auto-approved
+    } else {
+      throw new ApiError(400, "Invalid account type");
+    }
+
+    const profileDetails = await Profile.create({
+      gender: null,
+      DateOfBirth: null,
+      about: null,
+      PhoneNumber: contactNumber,
+    });
+
+    if (!profileDetails) {
+      throw new ApiError(500, "There was an error creating the profile in the database");
+    }
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      contactNumber,
+      password, // Password will be hashed by the pre-save hook in the User model
+      accountType,
+      approved,
+      additionalDetails: profileDetails._id,
+      image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+    });
+
+    if (!user) {
+      throw new ApiError(400, "Cannot create user in the database");
+    }
+
+    const createdUser = await User.findById(user._id).select("-password -refreshTokens");
+
+    if (!createdUser) {
+      throw new ApiError(500, "There was an error fetching the user details");
+    }
+
+    return res
       .status(200)
-      .json(new ApiResponse(200,createdUser,"User has been created Successfully"))
-      
-} catch (error) {
-    throw new ApiError(400,"there is some problem in sighning up the user || error.message")
-}
-  })
+      .json(new ApiResponse(200, createdUser, "User has been created successfully"));
+
+  } catch (error) {
+    throw new ApiError(500, error.message || "There was a problem signing up the user");
+  }
+});
+
 
 // login
 
@@ -178,7 +209,7 @@ const login =  asyncHandler(async(req,res)=>{
   throw new ApiError(400,"please register the user first")
  }
 
- const passwordCheck = await isPasswordCorrect(password)
+ const passwordCheck = await user.isPasswordCorrect(password)
 
  if(!passwordCheck){
   throw new ApiError(400,"password is incorrect")
@@ -198,7 +229,7 @@ return res
     .cookie("accessToken",accessToken,options)
     .cookie("refreshtoken",refreshToken,options)
     .json(new ApiResponse(200,{
-        user:accessToken,refreshToken,loggedInUser
+        accessToken,refreshToken,loggedInUser
     }
       ,"user loggedIn successfully"))
 
@@ -211,8 +242,13 @@ const changePassword = asyncHandler(async(req,res)=>{
    
  try {
    const{password,newPassword} = req.body
+   console.log(req.user)
  
    const user = await User.findById(req.user?._id);
+
+   if(!user){
+    throw new ApiError(400,"user not found")
+   }
  
    const isPasswordCorrect = await user.isPasswordCorrect(password);
  
@@ -223,16 +259,42 @@ const changePassword = asyncHandler(async(req,res)=>{
     user.password = newPassword;
     await user.save({validateBeforeSave:false})
 
-    const mailResponse = await mailSender(user.email,"password changes mail",)
+    //const mailResponse = await mailSender(user.email,"password changes mail",)
  
     return res
     .status(200)
     .json(new ApiResponse(200,{},"password has been successfully changed"))
 
  } catch (error) {
-   throw new ApiError(400,"there is some error in chaging the password || error.message")
+   throw new ApiError(400,error.message || "there is some error in chaging the password ")
  }
    
+})
+
+const logout = asyncHandler(async(req,res)=>{
+  await  User.findByIdAndUpdate(
+    req.user._id,{
+        $unset:{
+            refreshToken:1
+        }
+    },
+        {
+        new:true,
+        }
+ )
+
+ const options = {
+    httpOnly: true,
+    secure:true
+}
+
+return res.status(202)
+.clearCookie("accessToken",options)
+.clearCookie("refreshToken",options)
+.json(new ApiResponse(200,
+    {},
+    "user loggedout successfully"
+    ))
 })
 
 // refreshing accesstokens
@@ -242,4 +304,4 @@ const changePassword = asyncHandler(async(req,res)=>{
 // })
 
 
-export {sendOtp,signup,login,changePassword}
+export {sendOtp,signup,login,changePassword,logout}

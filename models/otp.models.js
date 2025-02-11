@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import mailSender from "../utils/mailSender";
+import mailSender from "../utils/mailSender.js";
 
 const otpSchema = new Schema({
 
@@ -11,7 +11,7 @@ const otpSchema = new Schema({
    createdAt:{
     type:String,
     default:Date.now(),
-    expire:3*60,
+    expires:180,
    },
 
    otp:{
@@ -26,24 +26,25 @@ const otpSchema = new Schema({
 
 //function to send mail
 
-async function sendVerificationEmail(email,otp){
+// async function sendVerificationEmail(email,otp){
 
-    try {
-        
-  const mailResponse = await mailSender(email,"Verification Email from EdTEch",otp)
-   console.log("email sent successfully:",mailResponse)
+//     try {
+//         console.log("emailis",email)
+//         console.log("otp is",otp)
+//   const mailResponse = await mailSender(email,"Verification Email from EdTEch",otp)
+//    console.log("email sent successfully:",mailResponse)
 
-    } catch (error) {
-        console.log("error occured while sending mails:",error.message);
-        throw error;
-    }
+//     } catch (error) {
+//         console.log("error occured while sending mails:",error.message);
+//         throw error;
+//     }
 
-}
+// }
 
-otpSchema.pre("save",async function(next){
-    await sendVerificationEmail(this.email,this.otp);
-    next();
-})
+// otpSchema.pre("save",async function(next){
+//     await sendVerificationEmail(this.email,this.otp);
+//     next();
+// })
 
 
 

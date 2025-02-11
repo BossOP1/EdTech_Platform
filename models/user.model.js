@@ -60,12 +60,16 @@ const userSchema = new Schema({
         default: true,
     },
     contactNumber:{
-        type:Number,
+        type:String,
         required:true,
         trim:true
     },
     refreshToken:{
         type:String,
+    },
+    email:{
+        type:String,
+        required:true
     }
 
 
