@@ -40,13 +40,17 @@ const coursesSchema = new Schema({
         required:true,
      },
      tag:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Tag",
+        type:String,
+        req:true
      },
      studentEnrolled:{
         type:mongoose.Schema.Types.ObjectId,
         required:true,
         ref:"User"
+     },
+     category:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"Category"
      }
 },
 {
