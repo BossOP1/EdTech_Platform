@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { Courses } from "../models/courses.model";
 import { Section } from "../models/section.model";
 import { SubSection } from "../models/subSection.model";
 import { ApiError } from "../utils/ApiError";
@@ -30,6 +31,20 @@ const createSection = asyncHandler(async(req,res)=>{
         }
     
         // TODO: to add this section to course
+
+        const updateCourse = await Courses.findByIdAndUpdate(courseId,{
+            $push:{
+                courseContent: section._id
+            }
+        },
+        {new:true,}
+        ).populate({
+            path:"courseContent",
+            populate: {
+               path:"subSection",
+            },
+           
+        }).exec()
     
         return res
         .status(200)

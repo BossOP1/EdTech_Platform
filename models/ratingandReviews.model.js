@@ -9,13 +9,16 @@ const ratingAndReviewsSchema = new Schema({
 
     rating:{
         type:Number,
+        required:true,
     },
 
     reviews:{
         type:String,
+        required:true,
     }
 
 },{timestamps:true}
 )
+ratingAndReviewsSchema.plugin(aggregatePaginate);
 
 export const RatingAndReviews = mongoose.model("RatingAndReviews",ratingAndReviewsSchema)

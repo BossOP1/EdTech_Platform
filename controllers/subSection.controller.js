@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { Section } from "../models/section.model";
 import { SubSection } from "../models/subSection.model";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
@@ -40,10 +41,20 @@ const createSubSection = asyncHandler(async(req,res)=>{
          if(!subSection){
             throw new ApiError(400,"there is some error in creating subSection db")
          }
-    
-         //TODO: add subsection to section
+              
+         const updateSection = await Section.findByIdAndUpdate(sectionId,
+            {
+                $push:{
+                  subSection: subSection._id 
+                },
+            },
+            {new :true}
+            ).populate("subSection").exec();
 
-         
+            if(!updateSection){
+                throw new ApiError(400,"there is an error in updating the section")
+            }
+
     
          return res
          .status(200)
@@ -96,10 +107,19 @@ const updateSubSection = asyncHandler(async(req,res)=>{
         )
     
         if(!updateSubSection){
-            throw new ApiError(400,"section to be updated does not found or some error in updating")
+            throw new ApiError(400,"Subsection to be updated does not found or some error in updating")
         }
     
-        //TODO :: update this to Section
+   
+
+        const updateSection = await Section.findById(sectionId).populate(
+            "updateSubSection"
+          ).exec()
+
+          if(!updateSection){
+          throw new ApiError(400,"section cant be updated")
+          }
+
     
         return res
         .status(200)
@@ -123,7 +143,18 @@ const deletedSubSection = asyncHandler(async(req,res)=>{
             throw new ApiError(400,"invalid SubsectionID")
         }
     
-        // TODO :: to pull sebsection from section
+
+       const deleteSubSectionFromSection = await Section.findByIdAndUpdate(sectionId,
+        {
+            $pull:{
+                subSection : subSection._id
+            }
+        }
+        ).exec()
+
+        if(!deleteSubSectionFromSection){
+            throw new ApiError(400,"deleteSubsection fromsection error")
+        }
     
         const subSection  = await SubSection.findByIdAndDelete(subSectionId);
     
