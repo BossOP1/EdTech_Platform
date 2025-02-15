@@ -40,7 +40,7 @@ const coursesSchema = new Schema({
         required:true,
      },
      tag:{
-        type:String,
+        type:[String],
         req:true
      },
      studentEnrolled:{
@@ -51,7 +51,10 @@ const coursesSchema = new Schema({
      category:{
       type:mongoose.Schema.Types.ObjectId,
       ref:"Category"
-     }
+     },
+     instructions: {
+		type: [String],
+	},
 },
 {
     timestamps:true,
