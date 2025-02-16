@@ -43,11 +43,11 @@ const coursesSchema = new Schema({
         type:[String],
         req:true
      },
-     studentEnrolled:{
+     studentEnrolled:[{
         type:mongoose.Schema.Types.ObjectId,
         required:true,
         ref:"User"
-     },
+     }],
      category:{
       type:mongoose.Schema.Types.ObjectId,
       ref:"Category"

@@ -5,10 +5,10 @@ const sectionSchema = new Schema({
         type:String,
     },
 
-    subSection:{
+    subSection:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:"SubSection"
-    }
+    }]
 
 })
 

@@ -1,11 +1,14 @@
 import { isValidObjectId } from "mongoose";
 import { Category } from "../models/category.model";
 import { Courses } from "../models/courses.model";
+import { Section } from "../models/section.model";
+import { SubSection } from "../models/subSection.model";
 import { User } from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { uploadOnCloudinary } from "../utils/Cloudinary";
+import {convertSecondsToDuration} from "../utils/convertSeconds"
 
 
 
@@ -204,13 +207,84 @@ const getAllCourses = asyncHandler(async(req,res)=>{
 })
 
 const getCourseDetails = asyncHandler(async(req,res)=>{
+    try {
+        const courseId = req.params;
+    
+        if(!isValidObjectId(courseId)){
+            throw new ApiError(500,"invalid CourseID")
+        }
+    
+        const courseDetails = await Courses.findById(courseId)
+        .populate({
+            path:"Instructor",
+            populate:{
+                path:"additionalDetails"
+            }
+        })
+        .populate("category")
+        .populate("ratingAndReviews")
+        .populate({
+            path:"courseContent",
+            populate:{
+                path:"subSections",
+                select:"-videoUrl"
+            }
+        }).exec()
+    
+        let totalDurationInSeconds = 0;
+    
+        courseDetails.courseContent.forEach((content)=>{
+          if(content.subSections && Array.isArray(content.subSections)){
+            content.subSections.forEach((subSection)=>{
+               const timeDurationInSeconds = parseInt(subSection.totalDuration) || 0;
+                 totalDurationInSeconds += timeDurationInSeconds;
+            })
+          }
+        })
+    
+        const totalDuration = convertSecondsToDuration(totalDurationInSeconds)
+         
+        if(!totalDuration){
+            throw new ApiError(400,"error in calculating Total Duration")
+        }
+        
+    
+        return res
+        .status(200)
+        .json(new ApiResponse(200,{courseDetails , totalDuration},"course details has been fetched successfilly"))
+    } catch (error) {
+        throw new ApiError(500,error.message || "error in getting course details")
+    }
+})
+
+const getFullCourseDetails = asyncHandler(async(req,res)=>{
+
     const courseId = req.params;
+    const userId = req.user?._id;
 
     if(!isValidObjectId(courseId)){
         throw new ApiError(500,"invalid CourseID")
     }
 
+     const courseDetails = await Courses.findById(courseId)
+        .populate({
+            path:"Instructor",
+            populate:{
+                path:"additionalDetails"
+            }
+        })
+        .populate("category")
+        .populate("ratingAndReviews")
+        .populate({
+            path:"courseContent",
+            populate:{
+                path:"subSections",
+                select:"-videoUrl"
+            }
+        }).exec()
 
+        // waste
+     
 })
 
 
@@ -241,22 +315,76 @@ const getInstructorCourse = asyncHandler(async(req,res)=>{
 })
 
 const deleteCourse = asyncHandler(async(req,res)=>{
-    const{courseId} = req.params
+   try {
+     const{courseId} = req.params
+ 
+     if(!isValidObjectId(courseId)){
+         throw new ApiError(400,"invalid object id")
+     }
+ 
+     const findDeleteCourse = await Courses.findById(courseId);
+ 
+     if(!findDeleteCourse){
+         throw new ApiError(400,"course couldnt found")
+     }
+ 
+ 
+    // to delete CourseContent (section and subsections)
+     const courseSections  =  findDeleteCourse.courseContent;
+ 
+     const section = await Section.find(
+         {$_id:
+             {$in:courseSections}
+     }
+     )
+ 
+     if(!section){
+         throw new ApiError(400,"no section found to delete")
+     }
+ 
+     const subSectionsIds = section.flatMap(section => section.subSections)
+ 
+     if(!subSectionsIds){
+         throw new ApiError(400,"no subsections found to delete")
+     }
+ 
+     if(subSectionsIds.length > 0){
+         await SubSection.deleteMany(
+             {
+                 $in:{
+                     $in:subSectionsIds
+                 }
+             }
+         )
+     }
+ 
+     if (courseSections.length > 0) {
+       await Section.deleteMany({ _id: { $in: courseSections } });
+       }
+ 
+     // deleting student enrolled   in thr course
+       const deleteStudentEnrolled = findDeleteCourse.studentsEnrolled;
+ 
+       if (deleteStudentEnrolled.length > 0) {
+         await User.deleteMany({
+           _id: { $in: deleteStudentEnrolled }
+         });
+       }
+ 
+       await Courses.findByIdAndDelete(findDeleteCourse._id);
 
-    if(!isValidObjectId(courseId)){
-        throw new ApiError(400,"invalid object id")
-    }
+       res
+       .status(200)
+       .json(new ApiResponse(200,{},"course has been deleted successfully"))
+ 
+   } catch (error) {
+    throw new ApiError(500,error.message ||"some error in deleteing course")
+   }
+   
 
-    const findDeleteCourse = await Courses.findById(courseId);
-
-    if(!findDeleteCourse){
-        throw new ApiError(400,"course couldnt found")
-    }
-
-    
 })
 
 
 
 
-export{createCourse,editCourse,getAllCourses,getInstructorCourse}
+export{createCourse,editCourse,getAllCourses,getInstructorCourse,deleteCourse,getCourseDetails}
