@@ -3,14 +3,15 @@ import fs from "fs"
 
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_SECRET, 
-    api_secret: process.env.CLOUDINART_API_KEY
+    api_key: process.env.CLOUDINART_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const uploadOnCloudinary = async (localFilePath)=>{
    
     try {
         //localfilePath not found
+       // console.log("LocalPath",localFilePath)
         if(!localFilePath) return null;
 
         // upload file on cloudinary
@@ -19,7 +20,7 @@ const uploadOnCloudinary = async (localFilePath)=>{
         }
         )
         // id file upload is successfull
-       // console.log("the uploaded file url is",response.url)
+        //console.log("the uploaded file url is",response.url)
       // console.log("response is @@@@@@@@@",response)
 
         fs.unlinkSync(localFilePath)

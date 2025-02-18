@@ -1,37 +1,38 @@
 import { isValidObjectId } from "mongoose";
-import { Category } from "../models/category.model";
-import { Courses } from "../models/courses.model";
-import { Section } from "../models/section.model";
-import { SubSection } from "../models/subSection.model";
-import { User } from "../models/user.model";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
-import { uploadOnCloudinary } from "../utils/Cloudinary";
-import {convertSecondsToDuration} from "../utils/convertSeconds"
-
+import { Category } from "../models/category.model.js";
+import { Courses } from "../models/courses.model.js";
+import { Section } from "../models/section.model.js";
+import { SubSection } from "../models/subSection.model.js";
+import { User } from "../models/user.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+import convertSecondsToDuration from "../utils/convertSeconds.js";
 
 
 
 const createCourse = asyncHandler(async(req,res)=>{
    try {
       
-     const{courseName,courseDescription,whatYouWillLearn,price,tag:_tag , instructions:_instructions} = req.body
- 
+     const{courseName,courseDescription,whatYouWillLearn,price,tag:_tags , instructions:_instructions} = req.body
+    // console.log("courseName",courseName)
      const {categoryId} = req.params
  
      if(!isValidObjectId(categoryId)){
          throw new ApiError(400,"invalid category id")
      }
  
-     if(!courseName || !courseDescription || !whatYouWillLearn || !price || !tag.length || ! instructions.length || !category){
+     if(!courseName || !courseDescription || !whatYouWillLearn || !price || !_tags.length || !_instructions.length){
          throw new ApiError(400,"please fill all the fields")
      }
  
       const thumbnailLocalPath = req?.files?.thumbnail[0].path;
+      //console.log("thumbnailLocalPath",thumbnailLocalPath)
+      
  
-      if(thumbnailLocalPath){
-         throw new ApiError(400,"thumbnail does not exist")
+      if(!thumbnailLocalPath){
+         throw new ApiError(400,"thumbnailLocalPath does not exist")
       }
  
      const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
@@ -40,15 +41,20 @@ const createCourse = asyncHandler(async(req,res)=>{
          throw new ApiError(400,"some error in uploading thumbnail")
      }
  
-     const tag = JSON.parse(_tag);
-     const instructions = JSON.parse(_instructions);
+     const tagData = JSON.parse(_tags);
+   // console.log("tagData",tagData)
  
-     if(!tag || !instructions){
+
+     const instructionsData = JSON.parse(_instructions);
+    // console.log("instructionsData",instructionsData)
+ 
+     if(!tagData || !tagData){
          throw new ApiError(400,"there is some error in parsing in tag or instrutcuons")
      }
  
-     const userId  = req?.user?._id;
+     const userId  = req?.user?._id  
  
+     console.log("userId",userId)
      if(!userId){
         throw new ApiError(400,"invalid userID")
      }
@@ -61,9 +67,11 @@ const createCourse = asyncHandler(async(req,res)=>{
          throw new ApiError(400,"only user can create course")
      }
  
-     const isCategoryValid = await Category.findById({
+     const isCategoryValid = await Category.findById(
          categoryId
-     })
+)
+
+//console.log("isCategoryValid",isCategoryValid)
      if(!isCategoryValid){
          throw new ApiError(400,"no such category exist")
      }
@@ -75,14 +83,16 @@ const createCourse = asyncHandler(async(req,res)=>{
          price,
          instructor:isInstructor._id,
          category:isCategoryValid._id,
-         tag,
-         instructions,
+         tag:tagData,
+         instructions:instructionsData,
          thumbnail:thumbnail?.url || "",
      })
  
      if(!course){
          throw new ApiError(400,"course not created")
      }
+
+    // console.log("===>",course)
  
      // adding course to user(instructor)
  
@@ -91,20 +101,25 @@ const createCourse = asyncHandler(async(req,res)=>{
              courses :course._id
             }
      },{new:true})
+
+    // console.log("!!!!!!!!!",instructorUser)
  
      if(!instructorUser){
          throw new ApiError(400,"error in updating instuctor user with course")
      }
  
      // adding course to category id
+     //console.log("**********")
  
-     const updateCategoryCourse = await Category.findById(categoryId,{
+     const updateCategoryCourse = await Category.findByIdAndUpdate(categoryId,{
          $push:{
              course:course._id
          }
      },{
          new:true
      })
+
+    
  
      if(!updateCategoryCourse){
          throw new ApiError(400,"error in updating course to the category")
@@ -333,7 +348,7 @@ const deleteCourse = asyncHandler(async(req,res)=>{
      const courseSections  =  findDeleteCourse.courseContent;
  
      const section = await Section.find(
-         {$_id:
+         {_id:
              {$in:courseSections}
      }
      )

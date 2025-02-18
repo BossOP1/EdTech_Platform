@@ -11,7 +11,7 @@ const router = Router();
 
 router.route("/otp").post(sendOtp);
 router.route("/register").post(signup);
-router.route("/login").post(verifyJWT,login);
+router.route("/login").post(login);
 router.route("/logout").post(verifyJWT,logout);
 router.route("/change-Password").post(verifyJWT,changePassword);
 

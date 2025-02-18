@@ -1,7 +1,7 @@
-import { Category } from "../models/category.model";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { Category } from "../models/category.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 
 
@@ -35,7 +35,7 @@ const createCategory = asyncHandler(async(req,res)=>{
 const showAllCategory = asyncHandler(async(req,res)=>{
 
     const allCategory = await Category.find({
-        _id
+    
     });
 
     if(!allCategory){

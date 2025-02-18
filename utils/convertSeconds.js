@@ -5,3 +5,5 @@ function convertSecondsToDuration(seconds) {
     
     return `${hours}h ${minutes}m ${remainingSeconds}s`;
   }
+
+  export default convertSecondsToDuration;
